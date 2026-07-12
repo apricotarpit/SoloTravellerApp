@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// User Table
+
+model User {
+  id            Int   @id @default(autoincrement())
+  fullName      String
+  email         String   @unique
+  password      String   
+  phone         String?
+
+  age           Int
+  gender        Gender
+
+  profession    String?
+  city          String? @db.VarChar(100)
+  bio           String?
+
+  profileImage  String?
+
+  role          Role @default(USER)
+
+  isActive      Boolean @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  trips             Trip[]
+  sentRequests      MatchRequest[] @relation("Sender")
+  receivedRequests  MatchRequest[] @relation("Receiver")
+}
+
+// Trip Table
+
+model Trip {
+  id            Int   @id @default(autoincrement())
+
+  userId        Int
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  destination   String @db.VarChar(100)
+  startDate     DateTime
+  endDate       DateTime
+
+  budget        Int?
+
+  tripType      TripType
+
+  description   String?
+
+  status        TripStatus @default(OPEN)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  requests      MatchRequest[]
+}
+
+// MatchRequest Table
+
+model MatchRequest {
+
+  id          Int @id @default(autoincrement())
+
+  senderId    Int
+  receiverId  Int
+  tripId      Int
+
+  sender      User @relation("Sender", fields: [senderId], references: [id])
+  receiver    User @relation("Receiver", fields: [receiverId], references: [id])
+
+  trip        Trip @relation(fields: [tripId], references: [id])
+
+  status      MatchStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+}
+
+
+// HardCoded
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum TripStatus {
+  OPEN
+  FULL
+  COMPLETED
+  CANCELLED
+}
+
+enum TripType {
+  TREKKING
+  ROADTRIP
+  BACKPACKING
+  BEACH
+  CAMPING
+}
+
+enum Role{
+  USER
+  ADMIN
+}
