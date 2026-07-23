@@ -22,6 +22,20 @@ export const LoginSchema = z.object({
 
 export type LoginInput = z.infer<typeof LoginSchema>;
 
+export const UpdateProfileSchema = z.object({
+    fullName: z.string().min(1, "Full name is required").optional(),
+    phone: z.string().optional(),
+    email: z.string().email("Valid email is required").optional(),
+    age: z.coerce.number().int().positive().optional(),
+    gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
+    profession: z.string().optional(),
+    city: z.string().optional(),
+    bio: z.string().optional(),
+    profileImage: z.string().optional(),
+});
+
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+
 export const ChangePasswordSchema = z.object({
     oldPassword: z.string().min(1, "Old password is required"),
     newPassword: z.string().min(6, "New password must be at least 6 characters long"),
