@@ -4,7 +4,6 @@ import bcrypt from "bcrypt";
 
 import { HttpError } from "../utils/httpResponse";
 import { CreateSchema } from "./Schema";
-import { createAuthToken } from "./jwt";
 import { createUserQuery, findUserByEmail } from "./query";
 
 export const registerHandler = async (req: Request, res: Response) => {
@@ -42,18 +41,11 @@ export const registerHandler = async (req: Request, res: Response) => {
             );
         }
 
-        const token = createAuthToken({
-            userId: user.id,
-            email: user.email,
-            role: user.role,
-        });
-
         return res.status(StatusCodes.CREATED).json({
             success: true,
             message: "User registered successfully",
             data: {
                 user,
-                token,
             },
         });
     } catch (error) {

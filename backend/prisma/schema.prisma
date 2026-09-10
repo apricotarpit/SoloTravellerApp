@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,114 +7,263 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-// User Table
-
 model User {
-  id            Int   @id @default(autoincrement())
-  fullName      String
-  email         String   @unique
-  password      String   
-  phone         String?
+  id                 Int                 @id @default(autoincrement())
+  fullName           String
+  username           String?             @unique
+  email              String              @unique
+  password           String
+  phone              String?
+  age                Int?
+  gender             Gender
+  profession         String?
+  city               String?             @db.VarChar(100)
+  bio                String?
+  profileImage       String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  isActive           Boolean             @default(true)
+  role               Role                @default(USER)
 
-  age           Int
-  gender        Gender
+  // Relations
+  receivedRequests   MatchRequest[]      @relation("Receiver")
+  sentRequests       MatchRequest[]      @relation("Sender")
+  trips              Trip[]
+  packingLists       PackingList[]
+  languages          UserLanguage[]
+  interests          UserInterest[]
+  verificationReqs   Verification[]
+  friendRequestsSent FriendRequest[]     @relation("FriendSender")
+  friendRequestsRecv FriendRequest[]     @relation("FriendReceiver")
+  chats              ChatParticipant[]
+  messages           Message[]
+  emergencyContacts  EmergencyContact[]
+  // removed accommodation/expense/rating/live-location models per request
+  tripInvitesSent    TripInvite[]         @relation("TripInviteSender")
+  tripInvitesRecv    TripInvite[]         @relation("TripInviteReceiver")
+  verificationsReviewed Verification[]     @relation("VerificationReviewer")
 
-  profession    String?
-  city          String? @db.VarChar(100)
-  bio           String?
-
-  profileImage  String?
-
-  role          Role @default(USER)
-
-  isActive      Boolean @default(true)
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  trips             Trip[]
-  sentRequests      MatchRequest[] @relation("Sender")
-  receivedRequests  MatchRequest[] @relation("Receiver")
+  verified           Boolean             @default(false)
+  verificationScore  Int                 @default(0) // aggregated trust score
 }
-
-// Trip Table
 
 model Trip {
-  id            Int   @id @default(autoincrement())
-
+  id            Int              @id @default(autoincrement())
   userId        Int
-  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  destination   String @db.VarChar(100)
+  destination   String           @db.VarChar(200)
   startDate     DateTime
   endDate       DateTime
-
   budget        Int?
-
   tripType      TripType
-
   description   String?
+  status        TripStatus       @default(OPEN)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
-  status        TripStatus @default(OPEN)
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
+  // Relations
   requests      MatchRequest[]
+  invites       TripInvite[]
+  // accommodations and expenses removed for now
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-// MatchRequest Table
 
 model MatchRequest {
+  id         Int         @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  tripId     Int
+  status     MatchStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
 
-  id          Int @id @default(autoincrement())
-
-  senderId    Int
-  receiverId  Int
-  tripId      Int
-
-  sender      User @relation("Sender", fields: [senderId], references: [id])
-  receiver    User @relation("Receiver", fields: [receiverId], references: [id])
-
-  trip        Trip @relation(fields: [tripId], references: [id])
-
-  status      MatchStatus @default(PENDING)
-
-  createdAt   DateTime @default(now())
+  receiver   User        @relation("Receiver", fields: [receiverId], references: [id])
+  sender     User        @relation("Sender", fields: [senderId], references: [id])
+  trip       Trip        @relation(fields: [tripId], references: [id])
 }
 
+model TripInvite {
+  id         Int         @id @default(autoincrement())
+  tripId     Int
+  senderId   Int
+  receiverId Int
+  message    String?
+  status     InviteStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
 
-// HardCoded
+  trip       Trip         @relation(fields: [tripId], references: [id])
+  sender     User         @relation("TripInviteSender", fields: [senderId], references: [id])
+  receiver   User         @relation("TripInviteReceiver", fields: [receiverId], references: [id])
+}
+
+model PackingList {
+  id          Int            @id @default(autoincrement())
+  userId      Int
+  name        String
+  destination String?
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  items       PackingItem[]
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PackingItem {
+  id           Int       @id @default(autoincrement())
+  packingListId Int
+  name         String
+  quantity     Int       @default(1)
+  category     String?
+  checked      Boolean   @default(false)
+
+  packingList  PackingList @relation(fields: [packingListId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id           Int               @id @default(autoincrement())
+  userId       Int
+  type         VerificationType
+  status       VerificationStatus @default(PENDING)
+  documents    String?            // storage pointer / url
+  reviewedById Int?
+  reviewedAt   DateTime?
+  createdAt    DateTime           @default(now())
+
+  user         User               @relation(fields: [userId], references: [id])
+  reviewedBy   User?              @relation("VerificationReviewer", fields: [reviewedById], references: [id])
+}
+
+model FriendRequest {
+  id         Int       @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  message    String?
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime  @default(now())
+
+  sender     User      @relation("FriendSender", fields: [senderId], references: [id])
+  receiver   User      @relation("FriendReceiver", fields: [receiverId], references: [id])
+}
+
+model Chat {
+  id        Int                @id @default(autoincrement())
+  createdAt DateTime           @default(now())
+  participants ChatParticipant[]
+  messages  Message[]
+}
+
+model ChatParticipant {
+  id     Int  @id @default(autoincrement())
+  chatId Int
+  userId Int
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  Int
+  content   String
+  delivered Boolean  @default(false)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+}
+
+model EmergencyContact {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  name      String
+  phone     String
+  relation  String?
+
+  user      User   @relation(fields: [userId], references: [id])
+}
+
+model UserLanguage {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  language Language
+
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+model UserInterest {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  interest  Interest
+
+  user      User     @relation(fields: [userId], references: [id])
+}
 
 enum Gender {
   MALE
   FEMALE
   OTHER
 }
-
+enum Role {
+  USER
+  ADMIN
+}
 enum MatchStatus {
   PENDING
   ACCEPTED
   REJECTED
 }
-
 enum TripStatus {
   OPEN
   FULL
   COMPLETED
   CANCELLED
 }
-
 enum TripType {
   TREKKING
   ROADTRIP
-  BACKPACKING
   BEACH
   CAMPING
+  SIGHTSEEING
+  BUSINESS
 }
-
-enum Role{
-  USER
-  ADMIN
+enum VerificationType {
+  ID_DOCUMENT
+  PHONE
+  EMAIL
+  PASSPORT
+}
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+enum Interest {
+  ADVENTURE
+  FOOD
+  NATURE
+  CULTURE
+  NIGHTLIFE
+  PHOTOGRAPHY
+  HIKING
+  BEACH
+}
+enum Language {
+  ENGLISH
+  HINDI
+  SPANISH
+  FRENCH
+  GERMAN
+  MANDARIN
 }
