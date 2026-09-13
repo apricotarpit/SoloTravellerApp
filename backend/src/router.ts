@@ -106,20 +106,20 @@ router.get("/traveller/trips/:tripId/invites", getTripInvitesHandler);
 router.get("/traveller/invites", getReceivedInvitesHandler);
 router.patch("/traveller/invites/:id", respondTripInviteHandler);
 
-// Verification
+// Verification -- can be done by AI 
 router.post("/traveller/verification/submit", submitVerificationHandler);
 router.get("/traveller/verification/status", getVerificationStatusHandler);
 router.get("/traveller/verification/pending", getPendingVerificationsHandler);
 router.patch("/traveller/verification/:id", reviewVerificationHandler);
 
-// Friends
+// Friends --Not needed
 router.post("/traveller/friends/request", sendFriendRequestHandler);
 router.get("/traveller/friends/requests/received", getReceivedFriendRequestsHandler);
 router.get("/traveller/friends/requests/sent", getSentFriendRequestsHandler);
 router.patch("/traveller/friends/requests/:id", respondFriendRequestHandler);
 router.delete("/traveller/friends/requests/:id", cancelFriendRequestHandler);
 
-// Chat
+// Chat  -- shocket.io used for live chat  
 router.post("/traveller/chats", createChatHandler);
 router.get("/traveller/chats", getUserChatsHandler);
 router.get("/traveller/chats/:id/messages", getChatMessagesHandler);
@@ -127,7 +127,7 @@ router.post("/traveller/chats/:id/messages", sendMessageHandler);
 router.patch("/traveller/messages/:id", updateMessageStatusHandler);
 router.delete("/traveller/messages/:id", deleteMessageHandler);
 
-// Emergency contacts
+// Emergency contacts  --(By AI DONE)  add it so that in emergency situations, the traveller can be contacted by their emergency contacts 
 router.post("/traveller/emergency-contacts", createEmergencyContactHandler);
 router.get("/traveller/emergency-contacts", getEmergencyContactsHandler);
 router.patch("/traveller/emergency-contacts/:id", updateEmergencyContactHandler);
