@@ -9,9 +9,15 @@ import { createTrip } from "./query";
 
 export const createTripHandler = async (req: Request, res: Response) => {
   try {
-    const parsed = CreateTripSchema.safeParse(req.body);
-    if (!parsed.success || !parsed.data) {
-      throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid request body");
+    const {
+        success:isValidRequestBody,
+        data: parsedRequestBody,
+        error:parsedRequestBodyError,
+    } = CreateTripSchema.safeParse(req.body);
+    
+    if (!isValidRequestBody || !parsedRequestBody) {
+        console.error(parsedRequestBodyError);            
+        throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid request body"+ parsedRequestBodyError);
     }
 
     const token = extractToken(req);
@@ -21,7 +27,7 @@ export const createTripHandler = async (req: Request, res: Response) => {
     const user = await findUserById(decoded.userId);
     if (!user) throw new HttpError(StatusCodes.UNAUTHORIZED, "Logged in user not found");
 
-    const body = parsed.data;
+    const body = parsedRequestBody;
     const created = await createTrip({
       userId: decoded.userId,
       destination: body.destination,

@@ -219,6 +219,7 @@ enum TripStatus {
   FULL
   COMPLETED
   CANCELLED
+  DELETE
 }
 enum TripType {
   TREKKING

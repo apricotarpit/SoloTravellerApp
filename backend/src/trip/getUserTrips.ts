@@ -2,13 +2,23 @@ import { Request, Response } from "express";
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import { HttpError } from "../utils/httpResponse";
 import { getTripsByUserId } from "./query";
+import { UserIdSchema } from "./Schema";
 
 export const getUserTripsHandler = async (req: Request, res: Response) => {
   try {
-    const userId = Number(req.params.userId);
-    if (Number.isNaN(userId)) throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid user id");
+    const {
+        success: isValidUserId,
+        data: parsedUserId,
+        error: parsedUserIdError,
+    } = UserIdSchema.safeParse(req.params);
+        
+    if (!isValidUserId || !parsedUserId) {
+      console.error(parsedUserIdError);
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid User id " + parsedUserIdError);
+    }
+    const UserId = parsedUserId.userid;
 
-    const result = await getTripsByUserId(userId);
+    const result = await getTripsByUserId(UserId);
 
     return res.status(StatusCodes.OK).json({ success: true, message: "User trips fetched", data: result });
   } catch (error) {

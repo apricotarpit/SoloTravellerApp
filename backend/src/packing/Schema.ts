@@ -19,6 +19,7 @@ export const UpdatePackingListSchema = z.object({
   startDate: z.string().datetime().nullable().optional(),
   endDate: z.string().datetime().nullable().optional(),
   items: z.array(z.object({
+    id: z.number().int().positive().optional(),
     name: z.string().min(1),
     quantity: z.number().int().positive().default(1),
     category: z.string().optional(),
@@ -28,5 +29,10 @@ export const UpdatePackingListSchema = z.object({
   message: "At least one field is required",
 });
 
+export const packingIdSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
 export type CreatePackingListInput = z.infer<typeof CreatePackingListSchema>;
 export type UpdatePackingListInput = z.infer<typeof UpdatePackingListSchema>;
+export type PackingIdInput = z.infer<typeof packingIdSchema>;

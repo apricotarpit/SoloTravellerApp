@@ -3,21 +3,34 @@ import { StatusCodes, getReasonPhrase } from "http-status-codes";
 
 import { HttpError } from "../utils/httpResponse";
 import { extractToken, verifyAuthToken } from "../auth/jwt";
-import { deletePackingList } from "./query";
+import { deletePackingList ,getPackingListById} from "./query";
+import { IdSchema } from "../trip/Schema";
 
 export const deletePackingListHandler = async (req: Request, res: Response) => {
   try {
+    const {
+      success: isValidListId,
+      data: parsedListId,
+      error: parsedListIdError,
+    } = IdSchema.safeParse(req.params);
+            
+    if (!isValidListId || !parsedListId) {
+      console.error(parsedListIdError);
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid User id " + parsedListIdError);
+    }
+    const ListId = parsedListId.tripid;
+
     const token = extractToken(req);
     if (!token) throw new HttpError(StatusCodes.UNAUTHORIZED, "Token is required");
 
     const { userId } = verifyAuthToken(token);
-    const listId = Number(req.params.id);
-    if (!Number.isInteger(listId) || listId <= 0) throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid packing list id");
 
-    const deleted = await deletePackingList(listId, userId);
+    const deleted = await deletePackingList(ListId, userId);
     if (!deleted) throw new HttpError(StatusCodes.NOT_FOUND, "Packing list not found");
 
-    return res.status(StatusCodes.OK).json({ success: true, message: "Packing list deleted" });
+    const list = await getPackingListById(ListId, userId);
+
+    return res.status(StatusCodes.OK).json({ success: true, message: "Packing list deleted" ,data: list});
   } catch (error) {
     console.error(error);
     if (error instanceof HttpError) return res.status(error.status).json({ success: false, message: error.message });

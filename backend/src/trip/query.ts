@@ -48,9 +48,9 @@ export const getTrips = async (filters: {
 }) => {
   const where: any = {};
 
+  where.status = filters.status ?? { not: "DELETE" };
   if (filters.destination) where.destination = { contains: filters.destination, mode: "insensitive" };
   if (filters.tripType) where.tripType = filters.tripType;
-  if (filters.status) where.status = filters.status;
   if (filters.startDate && filters.endDate)
     where.AND = [{ startDate: { gte: filters.startDate } }, { endDate: { lte: filters.endDate } }];
 
@@ -81,8 +81,8 @@ export const getTrips = async (filters: {
 };
 
 export const getTripById = async (id: number) => {
-  return prisma.trip.findUnique({
-    where: { id },
+  return prisma.trip.findFirst({
+    where: { id, status: { not: "DELETE" } },
     select: {
       id: true,
       userId: true,
@@ -156,5 +156,8 @@ export const updateTrip = async (id: number, data: any) => {
 };
 
 export const deleteTrip = async (id: number) => {
-  return prisma.trip.delete({ where: { id } });
+  return prisma.trip.update({
+    where: { id },
+    data: { status: "DELETE" },
+  });
 };
