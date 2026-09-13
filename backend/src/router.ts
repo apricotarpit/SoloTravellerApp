@@ -48,12 +48,10 @@ import {
     updateMessageStatusHandler,
     deleteMessageHandler,
 } from "./chat/handlers";
-import {
-    createEmergencyContactHandler,
-    getEmergencyContactsHandler,
-    updateEmergencyContactHandler,
-    deleteEmergencyContactHandler,
-} from "./emergency/handlers";
+import { createEmergencyContactHandler } from "./emergency/createEmergencyContact";
+import { getEmergencyContactsHandler } from "./emergency/getEmergencyContacts";
+import { updateEmergencyContactHandler } from "./emergency/updateEmergencyContact";
+import { deleteEmergencyContactHandler } from "./emergency/deleteEmergencyContact";
 
 const router = Router();
 
