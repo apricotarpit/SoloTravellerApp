@@ -19,7 +19,6 @@ const requestSelect = {
   status: true,
   createdAt: true,
   sender: { select: userSelect },
-  receiver: { select: userSelect },
   trip: {
     select: {
       id: true,

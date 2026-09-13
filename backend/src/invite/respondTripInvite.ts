@@ -1,17 +1,36 @@
 import { Request, Response } from "express";
 import { getReasonPhrase, StatusCodes } from "http-status-codes";
-
+import { extractToken, verifyAuthToken } from "../auth/jwt";
 import { HttpError } from "../utils/httpResponse";
-import { getInviteUserId, parseInviteId } from "./auth";
 import { RespondInviteSchema } from "./Schema";
 import { findInviteById, updateInviteStatus } from "./query";
 
 export const respondTripInviteHandler = async (req: Request, res: Response) => {
   try {
-    const parsed = RespondInviteSchema.safeParse(req.body);
-    if (!parsed.success) throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid request body");
+    const {
+      success:isValidRequestBody,
+      data: parsedRequestBody,
+      error:parsedRequestBodyError,
+    } = RespondInviteSchema.safeParse(req.body);
+                    
+    if (!isValidRequestBody || !parsedRequestBody) {
+      console.error(parsedRequestBodyError);            
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid request body"+ parsedRequestBodyError);
+    }
 
-    const userId = getInviteUserId(req);
+
+    const token = extractToken(req);
+    if (!token) throw new HttpError(StatusCodes.UNAUTHORIZED, "Token is required");
+    const userId =verifyAuthToken(token).userId;
+
+    const parseInviteId = (value: string | string[] | undefined, name: string) => {
+      const normalizedValue = Array.isArray(value) ? value[0] : value;
+      const id = Number(normalizedValue);
+      if (!Number.isInteger(id) || id <= 0) {
+        throw new HttpError(StatusCodes.BAD_REQUEST, `Invalid ${name} id`);
+      }
+      return id;
+    };
     const inviteId = parseInviteId(req.params.id, "invite");
     const invite = await findInviteById(inviteId);
 
@@ -23,7 +42,7 @@ export const respondTripInviteHandler = async (req: Request, res: Response) => {
       throw new HttpError(StatusCodes.CONFLICT, "This trip invite has already been handled");
     }
 
-    const updated = await updateInviteStatus(inviteId, parsed.data.status);
+    const updated = await updateInviteStatus(inviteId, parsedRequestBody.status);
     return res.status(StatusCodes.OK).json({ success: true, message: "Trip invite updated", data: updated });
   } catch (error) {
     console.error(error);

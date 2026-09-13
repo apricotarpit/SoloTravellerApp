@@ -65,41 +65,42 @@ router.get("/", (_req, res) => {
 });
 
 
-//Authentication API
+//Authentication API --done
 router.post("/traveller/auth/register", registerHandler);
 router.post("/traveller/auth/login", loginHandler);
 router.get("/traveller/auth/activeUser", activeUserHandler);
 router.post("/traveller/auth/change-password", changePasswordHandler);
 
-//User API
+//User API  --done
 router.get("/traveller/user/Users", allUsersHandler);
 router.get("/traveller/user", filterUsersHandler);
 router.get("/traveller/user/profile", profileHandler);
 router.patch("/traveller/user/updateProfile", updateProfileHandler);
 router.get("/traveller/user/:id", otherUserHandler);
 
-// Packing routes
+// Packing routes --done
 router.post("/traveller/packing/lists", createPackingListHandler);
 router.get("/traveller/packing/lists", getPackingListsHandler);
 router.get("/traveller/packing/lists/:id", getPackingListHandler);
 router.patch("/traveller/packing/lists/:id", updatePackingListHandler);
 router.delete("/traveller/packing/lists/:id", deletePackingListHandler);
 
-// Trip routes
+// Trip routes --done
 router.post("/traveller/trips", createTripHandler);
 router.get("/traveller/trips", getTripsHandler);
 router.get("/traveller/trips/:id", getTripHandler);
 router.patch("/traveller/trips/:id", updateTripHandler);
 router.delete("/traveller/trips/:id", deleteTripHandler);
-router.get("/traveller/trips/user/:userId", getUserTripsHandler);
+router.get("/traveller/trips/user/:Userid", getUserTripsHandler);
 
-// Matching / Match requests
+// Matching / Match requests --done
 router.post("/traveller/trips/:tripId/match-requests", createMatchRequestHandler);
 router.get("/traveller/trips/:tripId/match-requests", getMatchRequestsHandler);
 router.get("/traveller/match-requests", getReceivedMatchRequestsHandler);
-router.patch("/traveller/match-requests/:id", respondMatchRequestHandler);
+router.patch("/traveller/match-requests/:tripId", respondMatchRequestHandler);
+// trip request by the sender
 
-// Trip Invites
+// Trip Invites --done
 router.post("/traveller/trips/:tripId/invites", createTripInviteHandler);
 router.get("/traveller/trips/:tripId/invites", getTripInvitesHandler);
 router.get("/traveller/invites", getReceivedInvitesHandler);

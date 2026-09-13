@@ -4,26 +4,50 @@ import { StatusCodes, getReasonPhrase } from "http-status-codes";
 import { HttpError } from "../utils/httpResponse";
 import { extractToken, verifyAuthToken } from "../auth/jwt";
 import { UpdatePackingListSchema } from "./Schema";
-import { getPackingListById, updatePackingList } from "./query";
+import { packingIdSchema } from "./Schema";
+import { updatePackingList } from "./query";
 
 export const updatePackingListHandler = async (req: Request, res: Response) => {
   try {
-    const parsed = UpdatePackingListSchema.safeParse(req.body);
-    if (!parsed.success) throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid request body");
+    const {
+      success: isValidTripId,
+      data: parsedTripId,
+      error: parsedTripIdError,
+    } = packingIdSchema.safeParse(req.params);
+    
+    if (!isValidTripId || !parsedTripId) {
+      console.error(parsedTripIdError);
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid trip id " + parsedTripIdError);
+    }
+    const packingId = parsedTripId.id;
+
+    const {
+      success:isValidRequestBody,
+      data: parsedRequestBody,
+      error:parsedRequestBodyError,
+    } = UpdatePackingListSchema.safeParse(req.body);
+            
+    if (!isValidRequestBody || !parsedRequestBody) {
+      console.error(parsedRequestBodyError);            
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid request body"+ parsedRequestBodyError);
+    }
 
     const token = extractToken(req);
     if (!token) throw new HttpError(StatusCodes.UNAUTHORIZED, "Token is required");
-
     const { userId } = verifyAuthToken(token);
-    const listId = Number(req.params.id);
-    if (!Number.isInteger(listId) || listId <= 0) throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid packing list id");
 
-    const updated = await updatePackingList(listId, userId, {
-      name: parsed.data.name,
-      destination: parsed.data.destination,
-      startDate: parsed.data.startDate === undefined ? undefined : parsed.data.startDate === null ? null : new Date(parsed.data.startDate),
-      endDate: parsed.data.endDate === undefined ? undefined : parsed.data.endDate === null ? null : new Date(parsed.data.endDate),
-      items: parsed.data.items,
+    const updated = await updatePackingList(packingId, userId, {
+      name: parsedRequestBody.name,
+      destination: parsedRequestBody.destination,
+      startDate: parsedRequestBody.startDate === undefined ? undefined : parsedRequestBody.startDate === null ? null : new Date(parsedRequestBody.startDate),
+      endDate: parsedRequestBody.endDate === undefined ? undefined : parsedRequestBody.endDate === null ? null : new Date(parsedRequestBody.endDate),
+      items: parsedRequestBody.items?.map((item) => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        category: item.category,
+        checked: item.checked,
+      })),
     });
     if (!updated) throw new HttpError(StatusCodes.NOT_FOUND, "Packing list not found");
 

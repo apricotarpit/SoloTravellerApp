@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { StatusCodes, getReasonPhrase } from "http-status-codes";
 
 import { HttpError } from "../utils/httpResponse";
-import { getMatchingUserId, parseMatchingId } from "./auth";
 import { CreateMatchRequestSchema } from "./Schema";
 import {
   createMatchRequest,
@@ -10,22 +9,46 @@ import {
   findTripById,
   findUserById,
 } from "./query";
+import { extractToken, verifyAuthToken } from "../auth/jwt";
+import { IdSchema } from "../trip/Schema";
 
 export const createMatchRequestHandler = async (req: Request, res: Response) => {
   try {
-    const parsed = CreateMatchRequestSchema.safeParse(req.body);
-    if (!parsed.success) throw new HttpError(StatusCodes.BAD_REQUEST, "Invalid request body");
+    const {
+      success: isValidTripId,
+      data: parsedTripId,
+      error: parsedTripIdError,
+    } = IdSchema.safeParse(req.params);
+        
+    if (!isValidTripId || !parsedTripId) {
+      console.error(parsedTripIdError);
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid trip id " + parsedTripIdError);
+    }
+    const TripId = parsedTripId.tripid;
 
-    const senderId = getMatchingUserId(req);
-    const tripId = parseMatchingId(req.params.tripId, "trip");
-    const { receiverId } = parsed.data;
+    const {
+      success:isValidRequestBody,
+      data: parsedRequestBody,
+      error:parsedRequestBodyError,
+    } = CreateMatchRequestSchema.safeParse(req.body);
+            
+    if (!isValidRequestBody || !parsedRequestBody) {
+      console.error(parsedRequestBodyError);            
+      throw new HttpError(StatusCodes.BAD_REQUEST,"Invalid request body"+ parsedRequestBodyError);
+    }
+
+    const token = extractToken(req);
+    if (!token) throw new HttpError(StatusCodes.UNAUTHORIZED, "Token is required");
+
+    const senderId=verifyAuthToken(token).userId;
+    const { receiverId } = parsedRequestBody;
 
     if (senderId === receiverId) {
       throw new HttpError(StatusCodes.BAD_REQUEST, "You cannot send a match request to yourself");
     }
 
     const [trip, receiver] = await Promise.all([
-      findTripById(tripId),
+      findTripById(TripId),
       findUserById(receiverId),
     ]);
 
@@ -38,10 +61,10 @@ export const createMatchRequestHandler = async (req: Request, res: Response) => 
       throw new HttpError(StatusCodes.BAD_REQUEST, "Match requests can only be sent for open trips");
     }
 
-    const existing = await findPendingMatchRequest(senderId, receiverId, tripId);
+    const existing = await findPendingMatchRequest(senderId, receiverId, TripId);
     if (existing) throw new HttpError(StatusCodes.CONFLICT, "A pending match request already exists");
 
-    const request = await createMatchRequest({ senderId, receiverId, tripId });
+    const request = await createMatchRequest({ senderId, receiverId, tripId: TripId });
     return res.status(StatusCodes.CREATED).json({ success: true, message: "Match request sent", data: request });
   } catch (error) {
     console.error(error);

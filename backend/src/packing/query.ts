@@ -49,6 +49,7 @@ export const updatePackingList = async (id: number, userId: number, data: {
   startDate?: Date | null;
   endDate?: Date | null;
   items?: Array<{
+    id?: number;
     name: string;
     quantity: number;
     category?: string;
@@ -62,14 +63,51 @@ export const updatePackingList = async (id: number, userId: number, data: {
     if (!existing) return null;
 
     if (items !== undefined) {
-      await transaction.packingItem.deleteMany({ where: { packingListId: id } });
+      const existingItems = await transaction.packingItem.findMany({
+        where: { packingListId: id },
+        select: { id: true },
+      });
+      const existingItemIds = new Set(existingItems.map((item) => item.id));
+      const requestedItemIds = items
+        .map((item) => item.id)
+        .filter((itemId): itemId is number => itemId !== undefined);
+
+      if (requestedItemIds.some((itemId) => !existingItemIds.has(itemId))) {
+        throw new Error("Packing item does not belong to this packing list");
+      }
+
+      await transaction.packingItem.deleteMany({
+        where: {
+          packingListId: id,
+          id: { notIn: requestedItemIds },
+        },
+      });
+
+      for (const item of items) {
+        const itemData = {
+          name: item.name,
+          quantity: item.quantity,
+          category: item.category,
+          checked: item.checked,
+        };
+
+        if (item.id !== undefined) {
+          await transaction.packingItem.update({
+            where: { id: item.id },
+            data: itemData,
+          });
+        } else {
+          await transaction.packingItem.create({
+            data: { packingListId: id, ...itemData },
+          });
+        }
+      }
     }
 
     return transaction.packingList.update({
       where: { id },
       data: {
         ...listData,
-        ...(items !== undefined ? { items: { create: items } } : {}),
       },
       include: { items: true },
     });
