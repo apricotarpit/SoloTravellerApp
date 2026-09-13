@@ -1,17 +1,21 @@
 import { Request, Response } from "express";
 import { StatusCodes,getReasonPhrase } from "http-status-codes";
 import { HttpError } from "../utils/httpResponse";
-import { getEmergencyContactsByUserId } from "./query";
+import { findEmergencyContactById } from "./query";
 import { extractToken, verifyAuthToken } from "../auth/jwt";
+import { parseContactId } from "./Schema";
 
-export const getEmergencyContactsHandler = async (req: Request, res: Response) => {
+export const getEmergencyContactHandler = async (req: Request, res: Response) => {
   try {
     const token = extractToken(req);
     if (!token) throw new HttpError(StatusCodes.UNAUTHORIZED, "Token is required");
-    const user =verifyAuthToken(token).userId;
+    const userid =verifyAuthToken(token).userId;
 
-    const contacts = await getEmergencyContactsByUserId(user);
-    return res.status(StatusCodes.OK).json({ success: true, message: "Emergency contacts fetched", data: contacts });
+    const contact = await findEmergencyContactById(parseContactId(req.params.id));
+    if (!contact) throw new HttpError(StatusCodes.NOT_FOUND, "Emergency contact not found");
+    if (contact.userId !== userid) throw new HttpError(StatusCodes.FORBIDDEN, "You can only delete your own emergency contacts");
+
+    return res.status(StatusCodes.OK).json({ success: true, message: "Emergency contacts fetched", data: contact });
   } 
   catch (error) {
       console.error(error);

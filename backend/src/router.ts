@@ -27,6 +27,11 @@ import { createTripInviteHandler } from "./invite/createTripInvite";
 import { getTripInvitesHandler } from "./invite/getTripInvites";
 import { getReceivedInvitesHandler } from "./invite/getReceivedInvites";
 import { respondTripInviteHandler } from "./invite/respondTripInvite";
+import { createEmergencyContactHandler } from "./emergency/createEmergencyContact";
+import { getEmergencyContactsHandler } from "./emergency/getEmergencyContacts";
+import { updateEmergencyContactHandler } from "./emergency/updateEmergencyContact";
+import { deleteEmergencyContactHandler } from "./emergency/deleteEmergencyContact";
+import { getEmergencyContactHandler } from "./emergency/getEmergencyContact";
 import {
     submitVerificationHandler,
     getVerificationStatusHandler,
@@ -48,10 +53,6 @@ import {
     updateMessageStatusHandler,
     deleteMessageHandler,
 } from "./chat/handlers";
-import { createEmergencyContactHandler } from "./emergency/createEmergencyContact";
-import { getEmergencyContactsHandler } from "./emergency/getEmergencyContacts";
-import { updateEmergencyContactHandler } from "./emergency/updateEmergencyContact";
-import { deleteEmergencyContactHandler } from "./emergency/deleteEmergencyContact";
 
 const router = Router();
 
@@ -125,9 +126,11 @@ router.post("/traveller/chats/:id/messages", sendMessageHandler);
 router.patch("/traveller/messages/:id", updateMessageStatusHandler);
 router.delete("/traveller/messages/:id", deleteMessageHandler);
 
+// --done
 // Emergency contacts  --(By AI DONE)  add it so that in emergency situations, the traveller can be contacted by their emergency contacts 
 router.post("/traveller/emergency-contacts", createEmergencyContactHandler);
 router.get("/traveller/emergency-contacts", getEmergencyContactsHandler);
+router.get("/traveller/emergency-contacts/:id", getEmergencyContactHandler);
 router.patch("/traveller/emergency-contacts/:id", updateEmergencyContactHandler);
 router.delete("/traveller/emergency-contacts/:id", deleteEmergencyContactHandler);
 
