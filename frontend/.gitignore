@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.metro/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
